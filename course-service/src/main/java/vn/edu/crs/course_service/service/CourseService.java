@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -56,6 +57,35 @@ public class CourseService {
         }
         courseRepository.deleteById(id);
     }
+    
+    public Page<CourseDTO> search(String keyword, Pageable pageable) {
+        Page<Course> page = (keyword == null || keyword.isBlank())
+                ? courseRepository.findAll(pageable)
+                : courseRepository.findByTenMonHocContainingIgnoreCase(keyword, pageable);
+        return page.map(this::toDTO);
+    }
+
+    @Transactional
+    public CourseDTO reserveSeat(Long courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NoSuchElementException("Khong tim thay mon hoc id = " + courseId));
+        if (course.getSoChoConLai() <= 0) {
+            throw new IllegalStateException("Mon hoc da het cho, khong the dang ky");
+        }
+        course.setSoChoConLai(course.getSoChoConLai() - 1);
+        return toDTO(courseRepository.save(course));
+    }
+
+    @Transactional
+    public CourseDTO releaseSeat(Long courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NoSuchElementException("Khong tim thay mon hoc id = " + courseId));
+        if (course.getSoChoConLai() < course.getSoChoToiDa()) {
+            course.setSoChoConLai(course.getSoChoConLai() + 1);
+        }
+        return toDTO(courseRepository.save(course));
+    }
+
     private CourseDTO toDTO(Course course) {
         return new CourseDTO(
                 course.getId(),
