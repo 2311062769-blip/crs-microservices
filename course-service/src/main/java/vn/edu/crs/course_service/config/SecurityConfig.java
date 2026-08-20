@@ -1,15 +1,20 @@
 package vn.edu.crs.course_service.config;
 
 import vn.edu.crs.course_service.security.JwtAuthFilter;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.http.HttpMethod;
+
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
@@ -22,46 +27,61 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(sm ->
-                sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .authorizeHttpRequests(auth -> auth
+                .csrf(csrf -> csrf.disable())
 
-                .requestMatchers("/internal/**")
-                    .permitAll()
+                .sessionManagement(sm ->
+                        sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
 
-                .requestMatchers(HttpMethod.GET, "/courses/**")
-                    .permitAll()
+                .authorizeHttpRequests(auth -> auth
 
-                .requestMatchers(HttpMethod.GET, "/courses")
-                    .permitAll()
+                        // API nội bộ
+                        .requestMatchers("/internal/**")
+                        .permitAll()
 
-                .requestMatchers(HttpMethod.POST, "/courses/**")
-                    .hasRole("ADMIN")
+                        // Xem danh sách / chi tiết môn học: PUBLIC
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/courses",
+                                "/api/courses/**",
+                                "/courses",
+                                "/courses/**"
+                        )
+                        .permitAll()
 
-                .requestMatchers(HttpMethod.POST, "/courses")
-                    .hasRole("ADMIN")
+                        // Thêm môn học: chỉ ADMIN
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/courses",
+                                "/api/courses/**"
+                        )
+                        .hasRole("ADMIN")
 
-                .requestMatchers(HttpMethod.PUT, "/courses/**")
-                    .hasRole("ADMIN")
+                        // Sửa môn học: chỉ ADMIN
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/courses",
+                                "/api/courses/**"
+                        )
+                        .hasRole("ADMIN")
 
-                .requestMatchers(HttpMethod.PUT, "/courses")
-                    .hasRole("ADMIN")
+                        // Xóa môn học: chỉ ADMIN
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/courses",
+                                "/api/courses/**"
+                        )
+                        .hasRole("ADMIN")
 
-                .requestMatchers(HttpMethod.DELETE, "/courses/**")
-                    .hasRole("ADMIN")
+                        // Các request khác phải đăng nhập
+                        .anyRequest()
+                        .authenticated()
+                )
 
-                .requestMatchers(HttpMethod.DELETE, "/courses")
-                    .hasRole("ADMIN")
-
-                .anyRequest()
-                    .authenticated()
-            )
-            .addFilterBefore(
-                jwtAuthFilter,
-                UsernamePasswordAuthenticationFilter.class
-            );
+                .addFilterBefore(
+                        jwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                );
 
         return http.build();
     }
