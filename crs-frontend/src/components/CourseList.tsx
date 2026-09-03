@@ -6,12 +6,14 @@ interface CourseListProps {
   state: LoadState;
   errorMessage: string;
   onRetry: () => void;
-  onEdit: (course: Course) => void;
-  onDelete: (course: Course) => void;
+  onEdit?: (course: Course) => void;
+  onDelete?: (course: Course) => void;
+  onRegister?: (course: Course) => void;
+  registeringId?: number | null;
 }
 
 export default function CourseList({
-  courses, state, errorMessage, onRetry, onEdit, onDelete,
+  courses, state, errorMessage, onRetry, onEdit, onDelete, onRegister, registeringId,
 }: CourseListProps) {
   if (state === 'loading') return <p>Dang tai danh sach mon hoc...</p>;
 
@@ -26,6 +28,8 @@ export default function CourseList({
 
   if (state === 'empty') return <p>Khong tim thay mon hoc nao phu hop.</p>;
 
+  const showActions = !!onEdit || !!onDelete || !!onRegister;
+
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
@@ -33,7 +37,7 @@ export default function CourseList({
           <th>Ten mon hoc</th>
           <th>So tin chi</th>
           <th>So cho con lai</th>
-          <th>Thao tac</th>
+          {showActions && <th>Thao tac</th>}
         </tr>
       </thead>
       <tbody>
@@ -44,12 +48,28 @@ export default function CourseList({
             <td style={{ color: course.soChoConLai === 0 ? '#b91c1c' : 'inherit' }}>
               {course.soChoConLai} / {course.soChoToiDa}
             </td>
-            <td>
-              <button onClick={() => onEdit(course)}>Sua</button>
-              <button onClick={() => onDelete(course)} style={{ marginLeft: 8, color: '#b91c1c' }}>
-                Xoa
-              </button>
-            </td>
+            {showActions && (
+              <td>
+                {onEdit && <button onClick={() => onEdit(course)}>Sua</button>}
+                {onDelete && (
+                  <button onClick={() => onDelete(course)} style={{ marginLeft: 8, color: '#b91c1c' }}>
+                    Xoa
+                  </button>
+                )}
+                {onRegister && (
+                  <button
+                    onClick={() => onRegister(course)}
+                    disabled={course.soChoConLai === 0 || registeringId === course.id}
+                  >
+                    {registeringId === course.id
+                      ? 'Dang dang ky...'
+                      : course.soChoConLai === 0
+                        ? 'Het cho'
+                        : 'Dang ky'}
+                  </button>
+                )}
+              </td>
+            )}
           </tr>
         ))}
       </tbody>
